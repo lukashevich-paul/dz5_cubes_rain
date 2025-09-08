@@ -3,6 +3,13 @@ using UnityEngine;
 [RequireComponent(typeof(Renderer))]
 public class Painter : MonoBehaviour
 {
+    [SerializeField] private Color _defaultColor = Color.white;
+    private Renderer _objectRenderer;
+
+    private void Awake() {
+        _objectRenderer = GetComponent<Renderer>();
+    }
+
     private void Start()
     {
         ResetColor();
@@ -10,13 +17,11 @@ public class Painter : MonoBehaviour
 
     public void SetRandomColor()
     {
-        Renderer objectRenderer = GetComponent<Renderer>();
-        objectRenderer.material.color = Random.ColorHSV();
+        _objectRenderer.material.color = Random.ColorHSV();
     }
 
     public void ResetColor()
     {
-        Renderer objectRenderer = GetComponent<Renderer>();
-        objectRenderer.material.color = Color.white;
+        _objectRenderer.material.color = _defaultColor;
     }
 }

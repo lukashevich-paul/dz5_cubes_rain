@@ -22,22 +22,12 @@ public class Spawner : MonoBehaviour
         _pool = new ObjectPool<Cube>(
             createFunc: () => Instantiate(_prefab),
             actionOnGet: (obj) => ActionOnGet(obj),
-            actionOnRelease: (obj) => obj.gameObject.SetActive(false),
+            actionOnRelease: (obj) => obj.ResetParameters(),
             actionOnDestroy: (obj) => Destroy(obj.gameObject),
             collectionCheck: true,
             defaultCapacity: _defaultCapasity,
             maxSize: _maxSize
         );
-    }
-
-    private void OnEnable()
-    {
-        _coroutine = StartCoroutine(IncreaseCounter(_delay));
-    }
-
-    private void OnDisable()
-    {
-        StopCoroutine(_coroutine);
     }
 
     private void ActionOnGet(Cube cube)
@@ -46,7 +36,7 @@ public class Spawner : MonoBehaviour
         cube.transform.position = transform.position + RandonPosition();
         cube.transform.rotation = Random.rotation;
 
-        cube.DestroyItem += CubeRelease;
+        cube.ItemDumped += CubeRelease;
     }
 
     private Vector3 RandonPosition()
@@ -60,26 +50,32 @@ public class Spawner : MonoBehaviour
 
     private void CubeRelease(Cube cube)
     {
-        cube.DestroyItem -= CubeRelease;
+        cube.ItemDumped -= CubeRelease;
 
         _pool.Release(cube);
     }
 
-    private void GetCube()
+
+    private void OnEnable()
     {
-        _pool.Get();
+        _coroutine = StartCoroutine(Routine(_delay));
     }
 
-    private IEnumerator IncreaseCounter(float _delay)
+    private void OnDisable()
+    {
+        StopCoroutine(_coroutine);
+    }
+
+    private IEnumerator Routine(float _delay)
     {
         var wait = new WaitForSeconds(_delay);
 
         while (enabled)
         {
-            for (int i = 0; i < Random.Range(_minSpawnCount, _maxSpawnCount); i++)
-            {
-                Invoke(nameof(GetCube), 0f);
-            }
+            int spawnCount = Random.Range(_minSpawnCount, _maxSpawnCount);
+
+            for (int i = 0; i < spawnCount; i++)
+                _pool.Get();
 
             yield return wait;
         }

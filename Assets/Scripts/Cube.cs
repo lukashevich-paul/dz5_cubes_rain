@@ -1,42 +1,63 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 [RequireComponent(typeof(Rigidbody), typeof(Painter))]
 public class Cube : MonoBehaviour
 {
-    [SerializeField] private int _minLifetime = 2;
-    [SerializeField] private int _maxLifetime = 5;
-    [SerializeField] private bool _isDetonate;
+    [SerializeField] private float _minLifetime = 2f;
+    [SerializeField] private float _maxLifetime = 5f;
+    [SerializeField] private bool _isBumped;
     [SerializeField] private Painter _painter;
+    [SerializeField] private Rigidbody _rigidbody;
 
-    public event Action<Cube> DestroyItem;
+    public event Action<Cube> ItemDumped;
 
     private void Start()
     {
-        _isDetonate = false;
+        _isBumped = false;
         _painter = GetComponent<Painter>();
+        _rigidbody = GetComponent<Rigidbody>();
     }
 
-    private void RunDestroyEvent()
+    private void OnCollisionEnter(Collision collision)
     {
-        if (DestroyItem != null)
-        {
-            _isDetonate = false;
-            _painter.ResetColor();
-
-            DestroyItem(this);
-        }
+        if (collision.gameObject.TryGetComponent<Platform>(out _))
+            Bumped();
     }
 
-    public void Detonate()
+    private void Bumped()
     {
-        if (_isDetonate == false)
+        if (_isBumped == false)
         {
-            _isDetonate = true;
+            _isBumped = true;
             _painter.SetRandomColor();
 
-            this.Invoke(nameof(RunDestroyEvent), Random.Range(_minLifetime, _maxLifetime));
+            StartCoroutine(Wait());
         }
+    }
+
+    private IEnumerator Wait()
+    {
+        float lifeTime = Random.Range(_minLifetime, _maxLifetime);
+        
+        yield return new WaitForSeconds(lifeTime);
+
+        ItemDumped?.Invoke(this);
+    }
+
+    public void ResetParameters()
+    {
+        _isBumped = false;
+
+        gameObject.SetActive(false);
+        _rigidbody.velocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
+
+        transform.position = Vector3.zero;
+        transform.rotation = Quaternion.identity;
+
+        _painter.ResetColor();
     }
 }
